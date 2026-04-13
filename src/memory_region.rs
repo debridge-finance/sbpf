@@ -922,7 +922,7 @@ impl MappingCache {
     }
 }
 
-#[cfg(all(test, feature = "upstream-tests"))]
+#[cfg(test)]
 mod test {
     use std::{cell::RefCell, rc::Rc};
     use test_utils::assert_error;

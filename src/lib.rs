@@ -1,3 +1,4 @@
+#![allow(unexpected_cfgs)]
 // Derived from uBPF <https://github.com/iovisor/ubpf>
 // Copyright 2015 Big Switch Networks, Inc
 //      (uBPF: VM architecture, parts of the interpreter, originally in C)
@@ -25,6 +26,7 @@ extern crate thiserror;
 pub mod aligned_memory;
 mod asm_parser;
 pub mod assembler;
+pub mod coverage;
 #[cfg(feature = "debugger")]
 pub mod debugger;
 pub mod disassembler;

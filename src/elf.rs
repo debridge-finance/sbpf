@@ -306,7 +306,8 @@ impl<C: ContextObject> Executable<C> {
     /// Get the JIT compiled program
     #[cfg(all(feature = "jit", not(target_os = "windows"), target_arch = "x86_64"))]
     pub fn get_compiled_program(&self) -> Option<&JitProgram> {
-        self.compiled_program.as_ref()
+        // sol-coverage: ALWAYS force interpreter mode for PC coverage recording
+        None
     }
 
     /// Verify the executable
@@ -324,6 +325,11 @@ impl<C: ContextObject> Executable<C> {
     /// JIT compile the executable
     #[cfg(all(feature = "jit", not(target_os = "windows"), target_arch = "x86_64"))]
     pub fn jit_compile(&mut self) -> Result<(), crate::error::EbpfError> {
+        // sol-coverage: force interpreter mode for PC tracing
+        // JIT-compiled code doesn't call our coverage::record_pc() hook
+        if self.get_config().enable_instruction_tracing {
+            return Ok(()); // Skip JIT, fall through to interpreter
+        }
         let jit = JitCompiler::<C>::new(self)?;
         self.compiled_program = Some(jit.compile()?);
         Ok(())

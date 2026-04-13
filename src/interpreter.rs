@@ -187,6 +187,9 @@ impl<'a, 'b, C: ContextObject> Interpreter<'a, 'b, C> {
         let dst = insn.dst as usize;
         let src = insn.src as usize;
 
+        // sol-coverage: record every executed PC for coverage analysis
+        crate::coverage::record_pc(self.reg[11]);
+
         if config.enable_register_tracing {
             self.vm.register_trace.push(self.reg);
         }

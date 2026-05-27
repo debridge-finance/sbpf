@@ -518,6 +518,7 @@ impl<'a, 'b, C: ContextObject> Interpreter<'a, 'b, C> {
                     !ebpf::get_insn_unchecked(self.program, next_pc as usize).is_function_start_marker() {
                     throw_error!(self, EbpfError::UnsupportedInstruction);
                 }
+                crate::coverage::push_stack_frame(next_pc);
             },
 
             // Do not delegate the check to the verifier, since self.registered functions can be
@@ -548,6 +549,7 @@ impl<'a, 'b, C: ContextObject> Interpreter<'a, 'b, C> {
                         return false;
                     }
                     check_pc!(self, next_pc, target_pc as u64);
+                    crate::coverage::push_stack_frame(next_pc);
                 } else {
                     throw_error!(self, EbpfError::UnsupportedInstruction);
                 }
@@ -585,6 +587,7 @@ impl<'a, 'b, C: ContextObject> Interpreter<'a, 'b, C> {
                     ..ebpf::FIRST_SCRATCH_REG + ebpf::SCRATCH_REGS]
                     .copy_from_slice(&frame.caller_saved_registers);
                 check_pc!(self, next_pc, frame.target_pc);
+                crate::coverage::pop_stack_frame();
             }
             _ => throw_error!(self, EbpfError::UnsupportedInstruction),
         }

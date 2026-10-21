@@ -197,6 +197,9 @@ impl<'a, 'b, 'c, C: ContextObject> Interpreter<'a, 'b, 'c, C> {
         let dst = insn.dst as usize;
         let src = insn.src as usize;
 
+        // sol-coverage: record every executed PC for coverage analysis
+        crate::coverage::record_pc(self.reg[11]);
+
         if config.enable_register_tracing {
             self.vm.register_trace.push(self.reg);
         }
@@ -547,6 +550,7 @@ impl<'a, 'b, 'c, C: ContextObject> Interpreter<'a, 'b, 'c, C> {
                     return false;
                 }
                 check_pc!(self, next_pc, target_pc.wrapping_sub(self.program_vm_addr) / ebpf::INSN_SIZE as u64);
+                crate::coverage::push_stack_frame(next_pc);
             },
 
             ebpf::CALL_IMM => {
@@ -569,6 +573,7 @@ impl<'a, 'b, 'c, C: ContextObject> Interpreter<'a, 'b, 'c, C> {
                             return false;
                         }
                         next_pc = target_pc as u64;
+                        crate::coverage::push_stack_frame(next_pc);
                         resolved = true;
                     }
                 } else if let Some((_, target_pc)) =
@@ -579,6 +584,7 @@ impl<'a, 'b, 'c, C: ContextObject> Interpreter<'a, 'b, 'c, C> {
                         return false;
                     }
                     check_pc!(self, next_pc, target_pc as u64);
+                    crate::coverage::push_stack_frame(next_pc);
                     resolved = true;
                 }
                 if !resolved {
@@ -601,6 +607,7 @@ impl<'a, 'b, 'c, C: ContextObject> Interpreter<'a, 'b, 'c, C> {
                     ..ebpf::FIRST_SCRATCH_REG + ebpf::SCRATCH_REGS]
                     .copy_from_slice(&frame.caller_saved_registers);
                 next_pc = frame.target_pc;
+                crate::coverage::pop_stack_frame();
             }
             _ => throw_error!(self, EbpfError::UnsupportedInstruction),
         }

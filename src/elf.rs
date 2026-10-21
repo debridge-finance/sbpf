@@ -368,11 +368,8 @@ impl<C: ContextObject> Executable<C> {
     /// to [`Self::jit_compile`].
     #[cfg(all(feature = "jit", not(target_os = "windows"), target_arch = "x86_64"))]
     pub fn get_compiled_program(&self) -> Option<Arc<JitProgram>> {
-        let guard = self
-            .compiled_program
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
-        guard.as_ref().map(Arc::clone)
+        // sol-coverage: ALWAYS force interpreter mode for PC coverage recording
+        None
     }
 
     /// Verify the executable
@@ -398,6 +395,11 @@ impl<C: ContextObject> Executable<C> {
     /// function returns.
     #[cfg(all(feature = "jit", not(target_os = "windows"), target_arch = "x86_64"))]
     pub fn jit_compile(&self) -> Result<(), crate::error::EbpfError> {
+        // sol-coverage: force interpreter mode for PC tracing
+        // JIT-compiled code doesn't call our coverage::record_pc() hook
+        if self.get_config().enable_register_tracing {
+            return Ok(()); // Skip JIT, fall through to interpreter
+        }
         let jit = JitCompiler::<C>::new(self)?;
         let compiled = Arc::new(jit.compile()?);
         let mut guard = self
